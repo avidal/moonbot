@@ -1,5 +1,8 @@
 #!/usr/bin/env lua
 
+-- hook and logger are passed in when the plugin is loadfile()'d
+local hook, logger = ...
+
 function autojoin(params, conn)
     logger:debug("Running autojoiner.")
 

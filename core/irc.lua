@@ -2,7 +2,7 @@
 
 -- handles the details of the irc protocol/connection
 
-require("luarocks.loader")
+pcall(function() require("luarocks.require") end)
 
 local socket = require("socket")
 local pcre = require("rex_pcre")
@@ -13,11 +13,13 @@ IRC.re_line_no_prefix = pcre.new('(.*?) (.*)')
 IRC.re_netmask = pcre.new(':?([^!@]*)!?([^@]*)@?(.*)')
 IRC.re_param_ref = pcre.new('(?:^|(?<= ))(:.*|[^ ]+)')
 
-function IRC:new(config, copas)
+function IRC:new(config, copas, logger)
     logger:info('Initializing new IRC connection')
+
     local object = {
         config = config,
         copas = copas,
+        logger = logger,
         server = config.server,
         port = config.port,
         nick = config.nick,
@@ -30,7 +32,7 @@ end
 
 function IRC:connect()
     local fmt = "Connecting to %s:%d as %s"
-    logger:info(fmt:format(self.server, self.port, self.nick))
+    self.logger:info(fmt:format(self.server, self.port, self.nick))
 
     local sock, err = socket.connect(self.server, self.port)
     if sock == nil then
@@ -58,7 +60,7 @@ function IRC:command(command, ...)
         message = command
     end
 
-    logger:debug('[CMD] ' .. message)
+    self.logger:debug('[CMD] ' .. message)
     self:send(message)
 
 end
@@ -66,7 +68,7 @@ end
 function IRC:send(message)
     if not self.sock then return nil, "Dead socket." end
 
-    logger:debug("[SEND] " .. message)
+    self.logger:debug("[SEND] " .. message)
 
     self.sock:send(message .. "\r\n")
 end
@@ -74,7 +76,7 @@ end
 function IRC:recv(message)
     -- Receives (and parses) a message from the IRC server
 
-    logger:info('RECV: ' .. message)
+    self.logger:info('RECV: ' .. message)
 
     local prefix = ''
     local command, params = nil
@@ -119,7 +121,7 @@ function IRC:loop()
     while self.sock do
         local line, err, partial = self.sock:receive("*l")
         if line == nil then
-            logger:error('No line received.')
+            self.logger:error('No line received.')
             return line, err, partial
         end
 

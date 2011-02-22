@@ -2,9 +2,9 @@
 
 pcall(function() require("luarocks.require") end)
 
--- init the logger, make it global so require()d modules can use it
+-- init the logger
 require("logging.console")
-logger = logging.console()
+local logger = logging.console()
 logger:setLevel(logging.DEBUG)
 logger:info('Loading dependencies...')
 
@@ -37,7 +37,7 @@ connections = {}
 
 plugins = { command = {}, event = {} }
 
-hook = {}
+local hook = {}
 function hook:event(event, fn)
     logger:debug('Registering event for code ' .. event)
     if plugins.event[event] == nil then
@@ -52,11 +52,11 @@ logger:info('Loading modules')
 
 for _, mod in pairs(modules) do
     logger:debug('Loading ' .. mod)
-    assert(loadfile('plugins/' .. mod))()
+    assert(loadfile('plugins/' .. mod))(hook, logger)
 end
 
 for label, opts in pairs(networks) do
-    conn = IRC:new(opts, copas)
+    conn = IRC:new(opts, copas, logger)
     connections[label] = conn
 
     local sock, err = connections[label]:connect()
